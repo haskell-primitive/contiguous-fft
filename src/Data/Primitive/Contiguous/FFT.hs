@@ -33,10 +33,7 @@ mkComplex !r !i = r :+ i
 {-# INLINE mkComplex #-}
 
 clone :: Contiguous arr => Element arr b => Mutable arr s b -> ST s (Mutable arr s b)
-clone !m = do
-  !l <- sizeMutable m
-
-  cloneMutable m 0 (l - 1)
+clone !m = sizeMutable m >>= \x -> cloneMutable m 0 (x - 1)
 
 dftMutable :: forall arr x s. (RealFloat x, Contiguous arr, Element arr (Complex x))
      => Mutable arr s (Complex x)
