@@ -5,6 +5,7 @@
 module Data.Primitive.Contiguous.FFT
   ( dft
   , idft
+  , dftMutable
   , subDFT
   ) where
 
@@ -30,6 +31,42 @@ cis k n = C.cis (2 * pi * k / n)
 mkComplex :: x -> x -> Complex x
 mkComplex !r !i = r :+ i
 {-# INLINE mkComplex #-}
+
+clone :: Contiguous arr => Element arr b => Mutable arr s b -> ST s (Mutable arr s b)
+clone !m = do
+  !l <- sizeMutable m
+
+  cloneMutable m 0 (l - 1)
+
+dftMutable :: forall arr x s. (RealFloat x, Contiguous arr, Element arr (Complex x))
+     => Mutable arr s (Complex x)
+     -> ST s (Mutable arr s (Complex x))
+dftMutable !mut = do
+  !sz <- sizeMutable mut
+      
+  let getII !ix = (ix + sz `Prelude.div` 2) `Prelude.mod` sz 
+      go :: Int -- ^ i value
+         -> Int -- ^ j value
+         -> Complex x -- ^ accumulator
+         -> ST s ()
+      go !i !j !acc = if i == sz then return () else if j < sz
+        then do
+          let !jj = getII j
+          atJJ@(r :+ _) <- read mut jj
+          let real, imag, same :: x
+              !same = (-2) * pi * (fromIntegral (i * j)) / (fromIntegral sz)
+              !real = r * cos same
+              !imag = r * sin same
+              !val  = acc + mkComplex real imag
+          go i (j + 1) val
+        else do
+          let !ii = getII i
+          !_ <- write mut ii acc :: ST s ()
+          go (i + 1) 0 0
+
+  !_ <- go 0 0 0
+
+  return mut
 
 dft :: forall arr x. (RealFloat x, Contiguous arr, Element arr x, Element arr (Complex x))
      => arr x
