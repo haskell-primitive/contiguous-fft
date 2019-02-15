@@ -15,7 +15,7 @@ import qualified Prelude
 
 import Data.Bool (Bool,otherwise)
 import Data.Bits (shiftR,shiftL,(.&.),(.|.))
-import Data.Semiring (Semiring(..),Ring(..),(+),(*),(-))
+import Data.Semiring (negate,(+),(*),(-))
 import Control.Applicative (pure)
 import Control.Monad (when)
 import Data.Eq (Eq(..))
@@ -28,12 +28,13 @@ import Control.Monad.ST (ST,runST)
 import Data.Primitive.Contiguous (Contiguous,Element,Mutable)
 import qualified Data.Primitive.Contiguous as Contiguous
 
--- {-# RULES 
--- "fft/ifft" forall x. fft (ifft x) = x
--- "ifft/fft" forall x. ifft (fft x) = x
---   #-}
+{-# RULES 
+"fft/ifft" forall x. fft (ifft x) = x
+"ifft/fft" forall x. ifft (fft x) = x
+  #-}
 
--- | Radix-2 decimation-in-time fast Fourier Transform
+-- | Radix-2 decimation-in-time fast Fourier Transform.
+--   The given array must have a length that is a power of two.
 fft :: forall arr. (Contiguous arr, Element arr (Complex Double))
   => arr (Complex Double)
   -> arr (Complex Double)
