@@ -9,23 +9,25 @@
 module Data.Primitive.Contiguous.FFT
   ( fft
   , ifft
+  , mfft
   ) where
 
 import qualified Prelude
 
-import Data.Bool (Bool,otherwise)
-import Data.Bits (shiftR,shiftL,(.&.),(.|.))
-import Data.Semiring (negate,(+),(*),(-))
 import Control.Applicative (pure)
 import Control.Monad (when)
-import Data.Eq (Eq(..))
-import Data.Ord (Ord(..))
-import Data.Function (($),(.))
+import Control.Monad.Primitive (PrimMonad(..))
+import Control.Monad.ST (runST)
+import Data.Bits (shiftR,shiftL,(.&.),(.|.))
+import Data.Bool (Bool,otherwise)
 import Data.Complex (Complex(..),conjugate)
+import Data.Eq (Eq(..))
+import Data.Function (($),(.))
+import Data.Ord (Ord(..))
+import Data.Primitive.Contiguous (Contiguous,Element,Mutable)
+import Data.Semiring (negate,(+),(*),(-))
 import GHC.Exts
 import GHC.Real ((/))
-import Control.Monad.ST (ST,runST)
-import Data.Primitive.Contiguous (Contiguous,Element,Mutable)
 import qualified Data.Primitive.Contiguous as Contiguous
 
 {-# RULES 
@@ -58,9 +60,9 @@ ifft arr = if arrOK arr
     in cmap ((/lenComplex) . conjugate) . fft . cmap conjugate $ arr
   else Prelude.error "Data.Primitive.Contiguous.FFT.ifft: bad vector length"
 
-copyWhole :: forall arr s a. (Contiguous arr, Element arr a)
+copyWhole :: forall arr m a. (PrimMonad m, Contiguous arr, Element arr a)
   => arr a
-  -> ST s (Mutable arr s a)
+  -> m (Mutable arr (PrimState m) a)
 {-# inline copyWhole #-}
 copyWhole arr = do
   let len = Contiguous.size arr
@@ -76,10 +78,12 @@ arrOK arr =
   let n = Contiguous.size arr
   in (1 `shiftL` log2 n) == n
  
--- array length must be power of two. This property is not checked 
-mfft :: forall arr s. (Contiguous arr, Element arr (Complex Double))
-  => Mutable arr s (Complex Double)
-  -> ST s ()
+-- | Radix-2 decimation-in-time fast Fourier Transform.
+--   The given array must have a length that is a power of two,
+--   though this property is not checked.
+mfft :: forall arr m. (PrimMonad m, Contiguous arr, Element arr (Complex Double))
+  => Mutable arr (PrimState m) (Complex Double)
+  -> m ()
 mfft mut = do {
     len <- Contiguous.sizeMutable mut 
   ; let bitReverse !i !j = do {
@@ -140,11 +144,11 @@ log2 v0 = if v0 <= 0
           in go (i - 1) (r .|. si) (v `shiftR` si)
       | otherwise = go (i - 1) r v
 
-swap :: forall arr s x. (Contiguous arr, Element arr x)
-  => Mutable arr s x
+swap :: forall arr m x. (PrimMonad m, Contiguous arr, Element arr x)
+  => Mutable arr (PrimState m) x
   -> Int
   -> Int
-  -> ST s ()
+  -> m ()
 {-# inline swap #-}
 swap mut i j = do
   atI <- Contiguous.read mut i
