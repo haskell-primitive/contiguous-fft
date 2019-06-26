@@ -110,8 +110,8 @@ mfft mut = do {
                                   let i1 = i + l1
                                 ; xi1 :+ yi1 <- Contiguous.read mut i1
                                 ; let !c = Prelude.cos a
-                                      !s = Prelude.sin a
-                                      d = (c*xi1 - s*yi1) :+ (s*xi1 + c*yi1)
+                                      !s' = Prelude.sin a
+                                      d = (c*xi1 - s'*yi1) :+ (s'*xi1 + c*yi1)
                                 ; ci <- Contiguous.read mut i
                                 ; Contiguous.write mut i1 (ci - d)
                                 ; Contiguous.write mut i (ci + d)

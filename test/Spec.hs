@@ -1,5 +1,7 @@
 {-# language TemplateHaskell #-}
 
+{-# options_ghc -O0 #-}
+
 module Main (main) where
 
 import Data.Complex (Complex(..))
@@ -16,6 +18,9 @@ import Data.Primitive.Instances ()
 import qualified Data.Primitive.Contiguous.FFT as CF
 import qualified Numeric.MathFunctions.Comparison as MF
 
+epsilon :: Double
+epsilon = 0.0000000003
+
 main :: IO Bool
 main = checkParallel $$(discover)
 
@@ -23,18 +28,22 @@ prop_close :: Property
 prop_close = property $ do
   x <- forAll genPrimArray
   let fft' = fft x
+      {-# noinline fft' #-}
   let ifft' = ifft fft'
-  pwithin 5 ifft' x === True
+      {-# noinline ifft' #-}
+  pwithin ifft' x === True
 
 fft,ifft :: PrimArray (Complex Double) -> PrimArray (Complex Double)
 fft = CF.fft
 ifft = CF.ifft
 
-pwithin :: Int -> PrimArray (Complex Double) -> PrimArray (Complex Double) -> Bool
-pwithin acc xs ys = all (==True) (zipWith (within acc) (PA.primArrayToList xs) (PA.primArrayToList ys))
+pwithin :: PrimArray (Complex Double) -> PrimArray (Complex Double) -> Bool
+pwithin xs ys = all (== True)
+  $ zipWith within (PA.primArrayToList xs) (PA.primArrayToList ys)
 
-within :: Int -> Complex Double -> Complex Double -> Bool
-within acc (x :+ y) (x' :+ y') = MF.within acc x x' && MF.within acc y y'
+within :: Complex Double -> Complex Double -> Bool
+within (x :+ y) (x' :+ y') = abs (x - x') <= epsilon
+  && abs (y - y') <= epsilon
 
 genDouble :: Gen Double
 genDouble = Gen.double (Range.linearFrac 5 200)
