@@ -30,7 +30,7 @@ import GHC.Exts
 import GHC.Real ((/))
 import qualified Data.Primitive.Contiguous as Contiguous
 
-{-# RULES 
+{-# RULES
 "fft/ifft" forall x. fft (ifft x) = x
 "ifft/fft" forall x. ifft (fft x) = x
   #-}
@@ -48,7 +48,6 @@ fft arr = if arrOK arr
     ; Contiguous.unsafeFreeze marr
   }
   else Prelude.error "Data.Primitive.Contiguous.FFT.fft: bad array length"
-
 -- | Inverse fast Fourier transform.
 ifft :: forall arr. (Contiguous arr, Element arr (Complex Double))
   => arr (Complex Double)
@@ -77,7 +76,7 @@ arrOK :: forall arr a. (Contiguous arr, Element arr a)
 arrOK arr =
   let n = Contiguous.size arr
   in (1 `shiftL` log2 n) == n
- 
+
 -- | Radix-2 decimation-in-time fast Fourier Transform.
 --   The given array must have a length that is a power of two,
 --   though this property is not checked.
@@ -85,7 +84,7 @@ mfft :: forall arr m. (PrimMonad m, Contiguous arr, Element arr (Complex Double)
   => Mutable arr (PrimState m) (Complex Double)
   -> m ()
 mfft mut = do {
-    len <- Contiguous.sizeMutable mut 
+    len <- Contiguous.sizeMutable mut
   ; let bitReverse !i !j = do {
           ; if i == len - 1
               then stage 0 1
@@ -94,7 +93,7 @@ mfft mut = do {
                 ; let inner k l = if k <= l
                         then inner (k `shiftR` 1) (l - k)
                         else bitReverse (i + 1) (l + k)
-                ; inner (len `shiftR` 1) j 
+                ; inner (len `shiftR` 1) j
               }
         }
         stage l l1 = if l == (log2 len)
