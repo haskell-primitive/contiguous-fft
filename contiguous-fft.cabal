@@ -3,7 +3,7 @@ version:             0.2.2.0
 synopsis:            dft of contiguous memory structures
 description:         DFT and iDFT on data structures implementing a common
                      contiguous interface
-homepage:            https://github.com/chessai/contiguous-fft
+homepage:            https://github.com/haskell-primitive/contiguous-fft
 license:             BSD3
 license-file:        LICENSE
 author:              chessai
@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 
 source-repository head
   type: git
-  location: https://github.com/chessai/contiguous-fft.git
+  location: https://github.com/haskell-primitive/contiguous-fft.git
 
 library
   exposed-modules:
